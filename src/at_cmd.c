@@ -13,11 +13,15 @@
 
 #include "at_cmd.h"
 
-int send_atcmd(comport_t *comport, char *at, unsigned long timeout, char *expect, char *error, char *reply, int size)
+int    SEND_EVENT_G = 0;
+int    LEDS_EVENT_G = 0;
+
+int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expect, char *error, char *reply, int size)
 {
 	int                    i, rv = 0;
 	int                    res = ATRES_TIMEOUT;
 	int                    bytes = 0;
+	size_t                 length;
 	char                   buf[ATCMD_REPLY_LEN] = {'\0'};
 	char                   atcmd[ATCMD_LEN] = {'\0'};
 
@@ -49,26 +53,31 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout, char *expect
 
 	for(i=0; i<timeout/10; i++)
 	{
-		if( bytes >= sizeof(buf) )
+		if( SEND_EVENT == 1 )
 			break;
 
-		rv=comport_recv( comport, buf+bytes, sizeof(buf)-bytes, 10);
-		if(rv < 0)
+		//判断是否是你发送的命令
+		if( !(strstr(g_rece_flags.SEND_EVENT_BUF, at)) )
+		{
+			log_error("Received is not send AT command.\n");
+			return -8;
+		}
+		length = strlen(g_rece_flags.SEND_EVENT_BUF);
+		if(length < 0)
 		{
 			log_error("send AT command \'%s\' to \'%s\' failed, rv=%d\n", at, comport->devname, rv);
 			return -3;
 		}
 
-		bytes += rv;
 
-		if( expect && strstr(buf, expect) )
+		if( expect && strstr(g_rece_flags.SEND_EVENT_BUF, expect) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"OK\"\n", at);
 			res = ATRES_EXPECT;
 			break;
 		}
 
-		if( error && strstr(buf, error) )
+		if( error && strstr(g_rece_flags.SEND_EVENT_BUF, error) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"ERROR\"\n", at);
 			res = ATRES_ERROR;
@@ -76,17 +85,18 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout, char *expect
 		}
 	}
 
-	if( bytes > 0 )
-		log_trace("AT command reply:%s", buf);
+	if( length > 0 )
+		log_trace("AT command reply:%s", g_rece_flags.SEND_EVENT_BUF);
 
 	if( reply && size>0 )
 	{
-		bytes = strlen(buf)>size ? size : strlen(buf);
+		bytes = strlen(g_rece_flags.SEND_EVENT_BUF)>size ? size : strlen(g_rece_flags.SEND_EVENT_BUF);
 		memset(reply, 0, size);
-		strncpy(reply, buf, bytes);
+		strncpy(reply, g_rece_flags.SEND_EVENT_BUF, length);
 
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
 	}
+
 
 	return res;
 }

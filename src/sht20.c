@@ -224,4 +224,33 @@ int  sht2x_get_temp_humi(const char *devname, float *temp, float *rh)
 	return 0;
 }
 
+void float_to_hex_string(float f, char hexStr[9]) {
+	unsigned char *bytePtr = (unsigned char*)&f;
+	sprintf(hexStr, "%02X%02X%02X%02X", bytePtr[3], bytePtr[2], bytePtr[1],     bytePtr[0]);
+}
 
+int sht2x_get_temp_rh(char *buf, int size)
+{
+	int             rv;
+	float           temp;
+	float           humi;
+	char            hex_str_temp[9];
+	char            hex_str_humi[9];
+
+	memset(hex_str_temp, 0, sizeof(hex_str_temp));
+	memset(hex_str_humi, 0, sizeof(hex_str_humi));
+
+	rv = sht2x_get_temp_humi(SHT2X_DEVNAME, &temp, &humi);
+	if( rv<0 )
+	{
+		log_error("SHT2X get temperature and humidity failure\n");
+		return -1;
+	}
+
+	float_to_hex_string(temp, hex_str_temp);
+	float_to_hex_string(humi, hex_str_humi);
+
+	snprintf(buf, size, "AT+QLWULDATAEX=13,0200180008%s%s,0x0100\r\n", hex_str_temp, hex_str_humi);
+
+	return 0;
+}

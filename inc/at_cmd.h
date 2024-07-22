@@ -27,6 +27,9 @@
 
 #define AT_SUFFIX         "\r\n"
 
+extern int       SEND_EVENT_G;
+extern int       LEDS_EVENT_G;
+
 enum
 {
 	ATRES_ERROR,

@@ -29,6 +29,10 @@
 
 static inline void set_settings(comport_t *comport, const char *settings);
 
+rece_flags_t       g_rece_flags = {{0},{0}};
+pthread_mutex_t    comport_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 int comport_open(comport_t *comport, const char *devname, long baudrate, const char *settings)
 {
 	int                         rv = -1;

@@ -58,7 +58,7 @@ int nbiot_reset(comport_t *comport)
 
 
 
-int  nb_status_presend(comport_t *comport)
+int  nb_status_present(comport_t *comport)
 {
 	int rv=0;
 

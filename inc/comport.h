@@ -28,16 +28,29 @@
 #include  <sys/types.h>
 #include  <sys/stat.h>
 #include  <sys/select.h>
+#include  <pthread.h>
 
 #define   CONFIG_DEF_FRAGSIZE    128
 #define   TIMEOUT       5
+#define   RECEIVE_SIZE    512
+
+extern    pthread_mutex_t      comport_mutex;
+
 typedef  struct  comport_s{
 	int               fd;
-    char        devname[32];
+    char              devname[32];
 	long              baudrate;
 	unsigned char     databit,parity,stopbit,flowctrl;
 	int               fragsize;
 }comport_t;
+
+typedef recr_flags_s
+{
+	char       LEDS_EVENT_BUF[RECEIVE_SIZE];
+	char       SEND_EVENT_BUF[RECEIVE_SIZE];
+}rece_flags_t;
+
+extern rece_flags_t    g_rece_flags;
 
 extern int comport_open(comport_t *comport, const char *devname, long baudrate, const char *settings);
 

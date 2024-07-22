@@ -93,52 +93,27 @@ void *state_machine_thread(void *arg)
 }
 
 
-void float_to_hex_string(float f, char hexStr[9]) {
-	unsigned char *bytePtr = (unsigned char*)&f;
-	sprintf(hexStr, "%02X%02X%02X%02X", bytePtr[3], bytePtr[2], bytePtr[1],bytePtr[0]);
-}
-
 void *report_data(void *arg)
 {
 	nb_config_t*      nbiot_data = (nb_config_t*)arg;
 	int               rv;
-	float             temp;
-	float             humi;
-	char              hex_str_temp[9];
-	char              hex_str_humi[9];
-	char              bufferW[256];
+	char              bufferW[DATA_SIZE];
 
-	memset(hex_str_temp, 0, sizeof(hex_str_temp));
-	memset(hex_str_humi, 0, sizeof(hex_str_humi));
 
 	printf ("test state:%d\n", nbiot_data->current_state);
 
 	while(1)
 	{
 
-		if( nbiot_data->current_state != STATUS_READY )
-		{
-			continue;
-		}
-
-
-		sht2x_get_temp_humi(SHT2X_DEVNAME, &temp, &humi);
-
-		float_to_hex_string(temp, hex_str_temp);
-		float_to_hex_string(humi, hex_str_humi);
-
-		snprintf(bufferW, sizeof(bufferW), "AT+QLWULDATAEX=13,0200180008%s%s,0x0100\r\n", hex_str_temp, hex_str_humi);
-		rv = comport_send(&nbiot_data->comport, bufferW,sizeof(bufferW) );
+		sht2x_get_temp_rh(bufferW, DATA_SIZE);
+		rv = comport_send(&nbiot_data->comport, bufferW, DATA_SIZE );
 		if( rv<0 )
 		{
 			printf ("Send AT data failure.\n");
-			pthread_mutex_lock(&state_mutex);
-			nbiot_data->current_state = STATUS_INIT;
-			pthread_mutex_unlock(&state_mutex);
 		}
 		else
 			printf ("Send successful:%s\n",bufferW);
-		sleep(5);
+		sleep(10);
 	}
 }
 
@@ -169,12 +144,6 @@ void *receive_data(void *arg)
 
 	while(1)
 	{
-		/*  
-			if( nbiot_data->current_state != STATUS_READY)
-			{
-			continue;
-			}
-			*/
 
 		memset(bufferR, 0, sizeof(bufferR));
 		memset(value, 0, sizeof(value));
@@ -207,31 +176,19 @@ void *receive_data(void *arg)
 					printf ("Read failure.\n");
 				}
 				bufferR[bytes] = '\0';
-				//			printf("Received:%s\n",bufferR);
+
+				if( strstr(bufferR, "+NNMI:") )
+				{
+					LEDS_EVENT_G = 1;
+					//复制接收到的内容，让处理LED线程去执行
+				}
+				else
+				{
+					SEND_EVENT_G = 1;
+					//复制接收到的内容，让处理AT命令的回复的线程去执行
+				}
 
 #if 0
-				if( (0 == parser_request_value(bufferR, "+NNMI:", value, 256)) )
-				{
-					if(( 0 == parser_request_value(bufferR, "0101", value, 256)))
-					{
-
-						printf ("Received%s...\nOpen led!\n",
-								bufferR);
-						open_led(&leds, LED_R);
-					}
-					else if((0 == parser_request_value(bufferR, "0100", value, 256)))
-					{
-						printf("Received:%s...\nClose led!\n",
-								bufferR);
-						close_led(&leds, LED_R);
-					}
-				}
-				else if( (0 == parser_request_value(bufferR, "OK",value, 256)))
-				{
-
-					printf ("Receive ok:%s\n",bufferR);
-				}
-#endif
 				if (strstr(bufferR, "0101") && strstr(bufferR, "+NNMI:"))
 				{
 					printf ("Turning led on\n");
@@ -242,6 +199,7 @@ void *receive_data(void *arg)
 					printf ("Turning led Off\n");
 					close_led(&leds, LED_R);
 				}
+#endif
 				else if( strstr(bufferR, "OK") )
 				{
 

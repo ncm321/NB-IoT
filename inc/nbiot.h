@@ -32,7 +32,7 @@
 #include "leds.h"
 
 #define    SERIAL_DEVNAME    "/dev/ttyUSB0"
-
+#define    DATA_SIZE         512
 enum status_s{
 	STATUS_INIT,
 	STATUS_PRESEND,

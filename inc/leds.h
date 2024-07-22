@@ -30,14 +30,14 @@
 #include "gpiod.h"
 #define DELAY     300
 
-#define ON        1
-#define OFF       0
+#define ON        0
+#define OFF       1
 
 enum
 {
 	LED_R,
-	LED_G,
 	LED_B,
+	LED_G,
 	LED_MAX,
 };
 
@@ -58,9 +58,9 @@ typedef struct led_s
 
 static led_t leds_info[LED_MAX] = 
 {
-	{"red", 0, 11, ACTIVE_HIGH, NULL},
-	{"green", 0, 10,  ACTIVE_HIGH, NULL},
-	{"blue", 4, 9,  ACTIVE_HIGH, NULL},
+	{"red", 0, 11, ACTIVE_LOW, NULL},
+	{"blue", 0, 10,  ACTIVE_LOW, NULL},
+	{"green", 4, 9,  ACTIVE_LOW, NULL},
 };
 
 typedef struct leds_s
