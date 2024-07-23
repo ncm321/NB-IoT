@@ -29,7 +29,7 @@ extern int nbiot_reset(comport_t *comport);
 
 /*  Basic AT command  */
 static inline int check_at_ready(comport_t *comport);
-#if 0  
+  
 /*  AT command :ATE1 OR ATE0  */
 int nbiot_set_echo(comport_t *comport, int enable);
 
@@ -71,10 +71,11 @@ int nbiot_set_qregswt(comport_t *comport);
 
 //  AT+NMSTATUS? 
 int nbiot_seek_nmstatus(comport_t *comport);
-#endif
+
+int nb_connect(comport_t *comport);
 
 /*  ----------------NB-IoT presend ---------------*/
-int  nb_status_presend(comport_t *comport);
+int  nb_status_present(comport_t *comport);
 
 /*  ---------------NB-IoT Congif------------------ */
 int nb_status_config(comport_t *comport);

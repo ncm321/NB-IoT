@@ -50,33 +50,36 @@ void *state_machine_thread(void *arg)
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_INIT failed.\n");
-					pthread_mutex_unlock(&state_mutex);
 					break;
 				}
 				else
+				{
 					nbiot_data->current_state++;
+					break;
+				}
 			case STATUS_PRESEND:
-				rv = nb_status_presend(&nbiot_data->comport);
+				rv = nb_status_present(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_PRESEND failed.\n");
-					pthread_mutex_unlock(&state_mutex);
 					break;
 				}
 				else
+				{
 					nbiot_data->current_state++;
+					break;
+				}
 			case STATUS_CONFIG:
 				rv = nb_status_config(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug : STATUS_CONFIG failed.\n");
-					pthread_mutex_unlock(&state_mutex);
 					break;
 				}
 				else
 				{
 					nbiot_data->current_state++;
-					pthread_mutex_unlock(&state_mutex);
+					break;
 				}
 			case STATUS_READY:
 
@@ -84,7 +87,6 @@ void *state_machine_thread(void *arg)
 				sleep(30);
 				break;
 			default:
-				pthread_mutex_unlock(&state_mutex);
 				break;
 		}
 	}
@@ -127,27 +129,18 @@ void *receive_data(void *arg)
 	char              value[256];
 	char              bufferR[1024];
 	comport_t         comport;
-	int               timeout_ms = 5000;
+	int               timeout_ms = 10000;
 	struct timeval    timeout;
-	leds_t            leds =
-	{
-		.leds = leds_info,
-		.count = LED_MAX,
-	};
 
 	comport = nbiot_data->comport;
 
-	if( (rv=init_led(&leds))<0 )
-	{   
-		printf ("initial leds gpio failure,rv=%d\n",rv);
-	}
 
 	while(1)
 	{
 
 		memset(bufferR, 0, sizeof(bufferR));
 		memset(value, 0, sizeof(value));
-		printf ("Receiveing data...\n");
+		//		printf ("Receiveing data...\n");
 
 
 		FD_ZERO(&read_fds);
@@ -155,7 +148,6 @@ void *receive_data(void *arg)
 
 		timeout.tv_sec = timeout_ms/1000;
 		timeout.tv_usec = (timeout_ms % 1000) * 1000;
-
 		//		printf ("debug:comport->fd:%d\n",comport.fd);
 		rv =select((comport.fd)+1, &read_fds, NULL, NULL, &timeout);
 		if( rv<0 )
@@ -171,6 +163,8 @@ void *receive_data(void *arg)
 			if( FD_ISSET(comport.fd, &read_fds))
 			{
 				bytes = comport_recv(&comport, bufferR, sizeof(bufferR), 100);
+
+				printf ("debug:test:received buffer:%s\n",bufferR);
 				if( rv<0 )
 				{
 					printf ("Read failure.\n");
@@ -179,41 +173,95 @@ void *receive_data(void *arg)
 
 				if( strstr(bufferR, "+NNMI:") )
 				{
-					LEDS_EVENT_G = 1;
+					memset(g_rece_flags.LEDS_EVENT_BUF, 0, sizeof(g_rece_flags.LEDS_EVENT_BUF));
 					//复制接收到的内容，让处理LED线程去执行
+					strcpy(g_rece_flags.LEDS_EVENT_BUF, bufferR);
+					LEDS_EVENT_G = 1;
+					printf ("debug:led parser:%d\n",LEDS_EVENT_G);
 				}
 				else
 				{
-					SEND_EVENT_G = 1;
+					memset(g_rece_flags.SEND_EVENT_BUF, 0, sizeof(g_rece_flags.SEND_EVENT_BUF));
 					//复制接收到的内容，让处理AT命令的回复的线程去执行
+					strcpy(g_rece_flags.SEND_EVENT_BUF, bufferR);
+					if(nbiot_data->current_state == STATUS_READY)
+					{
+						SEND_EVENT_G = 2;
+					}
+					else
+						SEND_EVENT_G = 1;
 				}
 
-#if 0
-				if (strstr(bufferR, "0101") && strstr(bufferR, "+NNMI:"))
-				{
-					printf ("Turning led on\n");
-					open_led(&leds, LED_R);
-				}
-				else if (strstr(bufferR, "0100") && strstr(bufferR, "+NNMI:"))
-				{
-					printf ("Turning led Off\n");
-					close_led(&leds, LED_R);
-				}
-#endif
-				else if( strstr(bufferR, "OK") )
-				{
-
-					printf ("Receive : %s\n", bufferR);
-				}
 			}
 		}
 	}
 }
 
+void *leds_process(void *arg)
+{
+	int               rv;
+	leds_t            leds =
+	{   
+		.leds = leds_info,
+		.count = LED_MAX,
+
+	};  
+
+	if( (rv=init_led(&leds))<0 )
+	{
+		printf ("initial leds gpio failure,rv=%d\n",rv);
+	}
+	printf ("进入解析\n");
+	while(1)
+	{
+		if(LEDS_EVENT_G ==1)
+		{
+			printf ("test:Z进循环\n");
+			if (strstr(g_rece_flags.LEDS_EVENT_BUF, "0101"))
+			{
+				printf ("Turning LED on\n");
+				open_led(&leds, LED_R);
+			}
+			else if(strstr(g_rece_flags.LEDS_EVENT_BUF, "0100"))
+			{
+				printf ("Turning led Off\n");
+				close_led(&leds, LED_R);
+			}
+		}
+		else
+		{
+			continue;
+		}
+		LEDS_EVENT_G = 0;
+	}
+}
+
+
+void *send_process(void *arg)
+{
+
+	int           rv;
+
+	while( 1 )
+	{
+		if( SEND_EVENT_G==1 )
+		{
+			if( strstr(g_rece_flags.SEND_EVENT_BUF, "OK") )
+			{
+				printf("Receive:%s",g_rece_flags.SEND_EVENT_BUF);
+			}
+		}
+		else
+		{
+			continue;
+		}
+		SEND_EVENT_G = 0;
+	}
+}
 
 int main (int argc, char **argv)
 {
-	pthread_t      report_thread,receive_thread,state_thread;
+	pthread_t      report_thread,receive_thread,state_thread,leds_process_thread,send_process_thread;
 	const char    *dev = "/dev/ttyUSB0";
 	int            rv;
 	nb_config_t    nbiot_data;
@@ -247,10 +295,25 @@ int main (int argc, char **argv)
 		return -4;
 	}
 
+	if ( pthread_create(&leds_process_thread, NULL, leds_process,
+				&nbiot_data) !=0 )
+	{   
+		perror("Failed to create receive thread");
+		return -5; 
+	}
+	if ( pthread_create(&send_process_thread, NULL, send_process,
+				&nbiot_data) !=0 )
+	{   
+		perror("Failed to create receive led_process thread");
+		return -6; 
+	}
+
 
 	pthread_join(state_thread, NULL);
 	pthread_join(report_thread, NULL);
 	pthread_join(receive_thread, NULL);
+	pthread_join(leds_process_thread, NULL);
+	pthread_join(send_process_thread, NULL);
 
 	comport_close(&nbiot_data.comport);
 

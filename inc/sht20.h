@@ -29,7 +29,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <errno.h>
-
+#include "logger.h"
 
 #define   SOFTRESET                    0xFE
 #define   TRIGGER_TEMPERATURE_NO_HOLD  0xF3

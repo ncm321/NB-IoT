@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 #include "comport.h"
 #include "logger.h"
 

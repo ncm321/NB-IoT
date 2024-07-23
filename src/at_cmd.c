@@ -53,8 +53,11 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 
 	for(i=0; i<timeout/10; i++)
 	{
-		if( SEND_EVENT == 1 )
+		if( SEND_EVENT_G != 2 )
+		{
+			usleep(1000);
 			break;
+		}
 
 		//判断是否是你发送的命令
 		if( !(strstr(g_rece_flags.SEND_EVENT_BUF, at)) )
@@ -95,6 +98,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 		strncpy(reply, g_rece_flags.SEND_EVENT_BUF, length);
 
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
+		SEND_EVENT_G = 0;
 	}
 
 

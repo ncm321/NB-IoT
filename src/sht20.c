@@ -250,7 +250,7 @@ int sht2x_get_temp_rh(char *buf, int size)
 	float_to_hex_string(temp, hex_str_temp);
 	float_to_hex_string(humi, hex_str_humi);
 
-	snprintf(buf, size, "AT+QLWULDATAEX=13,0200180008%s%s,0x0100\r\n", hex_str_temp, hex_str_humi);
+	snprintf(buf, size, "AT+QLWULDATAEX=13,0200250008%s%s,0x0100\r\n", hex_str_temp, hex_str_humi);
 
 	return 0;
 }

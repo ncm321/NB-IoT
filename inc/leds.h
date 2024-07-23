@@ -30,8 +30,8 @@
 #include "gpiod.h"
 #define DELAY     300
 
-#define ON        0
-#define OFF       1
+#define ON        1
+#define OFF       0
 
 enum
 {

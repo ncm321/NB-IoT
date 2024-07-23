@@ -44,7 +44,7 @@ typedef  struct  comport_s{
 	int               fragsize;
 }comport_t;
 
-typedef recr_flags_s
+typedef struct rece_flags_s
 {
 	char       LEDS_EVENT_BUF[RECEIVE_SIZE];
 	char       SEND_EVENT_BUF[RECEIVE_SIZE];
