@@ -1,5 +1,5 @@
 /*********************************************************************************
- *      Copyright:  (C) 2024 LingYun IoT System Studio
+ *      Copyright:  (C) 2024 niuchunmin
  *                  All rights reserved.
  *
  *       Filename:  at_cmd.c

@@ -1,12 +1,12 @@
 /*********************************************************************************
- *      Copyright:  (C) 2024 ioter<ioter@gmail.com>
+ *      Copyright:  (C) 2024 niuchunmin 
  *                  All rights reserved.
  *
  *       Filename:  sht20.c
  *    Description:  This file 
  *                 
  *        Version:  1.0.0(06/07/24)
- *         Author:  ioter <ioter@gmail.com>
+ *         Author:  niuchunmin<2430815397@qq.com>
  *      ChangeLog:  1, Release initial version on "06/07/24 15:08:07"
  *                 
  ********************************************************************************/
