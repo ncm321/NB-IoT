@@ -18,7 +18,7 @@ LDFLAGS+=-L${GPIODLIB}
 CC=gcc
 
 all:
-		${CC} ${CFLAGS} -g nbiot.c -o ${APPNAME} ${LDFLAGS} -lnbiot -lgpiod -pthread
+		${CC} ${CFLAGS} -g main.c -o ${APPNAME} ${LDFLAGS} -lnbiot -lgpiod -pthread
 
 clean:
 		rm -f ${APPNAME}

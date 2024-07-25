@@ -1,5 +1,5 @@
 /*********************************************************************************
- *      Copyright:  (C) 2024 niuchunmin
+ *      Copyright:  (C) 2024 LingYun IoT System Studio
  *                  All rights reserved.
  *
  *       Filename:  nb_at.c
@@ -67,7 +67,8 @@ int nbiot_set_echo(comport_t *comport, int enable)
 /*  AT Command:AT+CGMI-----Module exist or not */
 int nbiot_module_exist(comport_t *comport)
 {
-	if( send_atcmd(comport, "AT+CGMI", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)
+	int rv;
+	if( (rv = send_atcmd(comport, "AT+CGMI", 5000, "OK", AT_ERRSTR, NULL, 0) )< 0)
 	{
 		log_error("send AT+AGMI command to  failed, rv=%d\n", rv);
 		return -1;
@@ -81,7 +82,7 @@ int nbiot_sim_exist(comport_t *comport)
 {
 	if( send_atcmd(comport, "AT+CIMI", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)
 	{
-		log_error("send AT+CIMI command to  failed, rv=%d\n", rv);
+		log_error("send AT+CIMI command to  failed\n");
 		return -2;
 	}
 	return 0;
@@ -94,7 +95,7 @@ int nbiot_get_gmm(comport_t *comport)
 
 	if( send_atcmd(comport, "AT+CGMM", 5000, "OK", AT_ERRSTR,      NULL, 0) < 0)
 	{   
-		log_error("send AT+CGMM command to         failed, rv=%d\n", rv);
+		log_error("send AT+CGMM command to failed, \n");
 		return -2; 
 	}   
 	return 0;
@@ -104,7 +105,7 @@ int nbiot_autoConnect(comport_t *comport)
 {
 	if( send_atcmd(comport, "AT+NCONFIG=AUTOCONNECT,TRUE", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)
 	{
-		log_error("send AT+NCONFIG=AUTOCONNECT,TRUE command to  failed, rv=%d\n", rv);
+		log_error("send AT+NCONFIG=AUTOCONNECT,TRUE command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -132,7 +133,7 @@ int nbiot_set_cfun(comport_t *comport)
 
 	if( send_atcmd(comport, "AT+CFUN=1", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)
 	{
-		log_error("send AT+CFUN command to  failed, rv=%d\n", rv);
+		log_error("send AT+CFUN command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -143,17 +144,17 @@ int nbiot_set_nband(comport_t *comport)
 {
 	if( send_atcmd(comport, "AT+CFUN=0", 5000, "OK", AT_ERRSTR,    NULL, 0) < 0)
 	{
-		log_error("send AT+CFUN command to         failed, rv=%d\n", rv);
+		log_error("send AT+CFUN command to failed\n");
 		return -1;
 	}
 	if( send_atcmd(comport, "AT+NBAND=5,8", 5000, "OK", AT_ERRSTR,    NULL, 0) < 0)
 	{
-		log_error("send AT+NBAND=5,8 command to         failed, rv=%d\n", rv);
+		log_error("send AT+NBAND=5,8 command to failed\n");
 		return -2;
 	}
 	if( send_atcmd(comport, "AT+CFUN=1", 5000, "OK", AT_ERRSTR,    NULL, 0) < 0)
 	{
-		log_error("send AT+CFUN command to         failed, rv=%d\n", rv);
+		log_error("send AT+CFUN command to failed\n");
 		return -3;
 	}
 	return 0;
@@ -167,7 +168,7 @@ int nbiot_set_cgatt(comport_t *comport)
 
 	if( send_atcmd(comport, "AT+CGATT=1", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)                 
 	{         
-		log_error("send AT+CFUN command to  failed, rv=%d\n", rv);
+		log_error("send AT+CFUN command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -179,7 +180,7 @@ int nbiot_seek_cgatt(comport_t *comport)
 
 	if( send_atcmd(comport, "AT+CGATT?", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)                 
 	{         
-		log_error("send AT+CFUN command to  failed, rv=%d\n", rv);
+		log_error("send AT+CFUN command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -190,7 +191,7 @@ int nbiot_set_server(comport_t *comport)
 {
 	if( send_atcmd(comport, "AT+NPING=221.229.214.202", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)                  
 	{  
-		log_error("send AT+NPING command to  failed, rv=%d\n", rv);
+		log_error("send AT+NPING command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -201,7 +202,7 @@ int nbiot_set_server(comport_t *comport)
 int nbiot_set_prot(comport_t *comport){
 	if( send_atcmd(comport, "AT+NCDP=221.229.214.202,5683", 5000, "OK",    AT_ERRSTR, NULL, 0) < 0)                  
 	{  
-		log_error("send AT+NCDP command to  failed,   rv=%d\n", rv);
+		log_error("send AT+NCDP command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -212,7 +213,7 @@ int nbiot_seek_nmstatus(comport_t *comport)
 {
 	if( send_atcmd(comport, "AT+NMSTATUS?", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)                  
 	{  
-		log_error("send AT+CNMSTATUS? command to  failed, rv=%d\n", rv);
+		log_error("send AT+CNMSTATUS? command to  failed\n");
 		return -1;
 	}
 	return 0;
@@ -224,7 +225,7 @@ int nb_connect(comport_t *comport)
 {
 	if( send_atcmd(comport, "AT+NCONFIG=AUTOCONNECT,FALSE", 5000, "OK", AT_ERRSTR, NULL, 0) < 0)                       
 	{
-		log_error("send CONNECT command to   failed, rv=%d\n", rv);
+		log_error("send CONNECT command to   failed\n");
 		return -1;
 	}
 	return 0;
