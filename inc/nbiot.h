@@ -1,18 +1,12 @@
-/********************************************************************************
- *      Copyright:  (C) 2024 niuchunmin 
- *                  All rights reserved.
+/*
+ * nbiot.h
  *
- *       Filename:  nbiot.h
- *    Description:  This file 
- *
- *        Version:  1.0.0(17/07/24)
- *         Author:  Niu Chunmin <niuchunmin@2430815397@qq.com>
- *      ChangeLog:  1, Release initial version on "17/07/24 10:24:41"
- *                 
- ********************************************************************************/
+ *  Created on: 2024年7月26日
+ *      Author: 杨璐
+ */
 
-#ifndef  _NBIOT_H_
-#define  _NBIOT_H_
+#ifndef INC_NBIOT_H_
+#define INC_NBIOT_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,11 +20,10 @@
 #include <errno.h>
 #include "sht20.h"
 #include "logger.h"
-#include "comport.h"
+#include "usart.h"
 #include "at_cmd.h"
-#include "nb_at.h"
+#include "at-bc28.h"
 #include "leds.h"
-
 #define    SERIAL_DEVNAME    "/dev/ttyUSB0"
 #define    DATA_SIZE         512
 extern enum status_s{
@@ -57,5 +50,4 @@ void *process_report(void *arg);
 int  Linux_Create();
 static inline void msleep(unsigned long ms);
 
-
-#endif
+#endif /* INC_NBIOT_H_ */
