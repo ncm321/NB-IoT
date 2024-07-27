@@ -1,0 +1,3 @@
+#ignore libgpiod
+test_lu/include/
+test_lu/lib/

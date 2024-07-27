@@ -51,6 +51,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 	res = ATRES_TIMEOUT;
 	memset( buf, 0, sizeof(buf) );
 
+#if 0
 	for(i=0; i<timeout/10; i++)
 	{
 		if( SEND_EVENT_G != 2 )
@@ -60,6 +61,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 		}
 
 		//判断是否是你发送的命令
+
 		if( !(strstr(g_rece_flags.SEND_EVENT_BUF, at)) )
 		{
 			log_error("Received is not send AT command.\n");
@@ -100,7 +102,47 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
 		SEND_EVENT_G = 0;
 	}
+#endif
+	for(i=0; i<timeout/10; i++)
+	{
+		if( bytes >= sizeof(buf) )
+			break;
 
+		rv=comport_recv( comport, buf+bytes, sizeof(buf)-bytes, 10);
+		if(rv < 0)
+		{
+			log_error("send AT command \'%s\' to \'%s\' failed, rv=%d\n", at, comport->devname, rv);
+			return -3;
+		}
+
+		bytes += rv;
+
+		if( expect && strstr(buf, expect) )
+		{
+			log_debug("send AT command \"%s\" and got reply \"OK\"\n", at);
+			res = ATRES_EXPECT;
+			break;
+		}
+
+		if( error && strstr(buf, error) )
+		{
+			log_debug("send AT command \"%s\" and got reply \"ERROR\"\n", at);
+			res = ATRES_ERROR;
+			break;
+		}
+	}
+
+	if( bytes > 0 )
+		log_trace("AT command reply:%s", buf);
+
+	if( reply && size>0 )
+	{
+		bytes = strlen(buf)>size ? size : strlen(buf);
+		memset(reply, 0, size);
+		strncpy(reply, buf, bytes);
+
+		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
+	}
 
 	return res;
 }

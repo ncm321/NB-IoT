@@ -44,7 +44,7 @@ void *state_machine_thread(void *arg)
 {
 	nb_config_t*     nbiot_data = (nb_config_t*)arg;
 	int              rv;
-	nbiot_data->current_state = STATUS_READY;
+	nbiot_data->current_state = STATUS_INIT;
 
 
 	while(1)
@@ -52,7 +52,6 @@ void *state_machine_thread(void *arg)
 		switch(nbiot_data->current_state)
 		{
 			case STATUS_INIT:
-				//		rv = nbiot_reset(&nbiot_data->comport);
 				rv = send_atcmd_check_ok(&nbiot_data->comport, "AT", 500);
 				if( rv<0 )
 				{
