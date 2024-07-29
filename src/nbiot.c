@@ -52,7 +52,7 @@ void *state_machine_thread(void *arg)
 		switch(nbiot_data->current_state)
 		{
 			case STATUS_INIT:
-				rv = nb_reset_ok(&nbiot_data->comport, "AT", 500);
+				rv = nb_reset_ok(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_INIT failed.\n");
