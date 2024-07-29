@@ -51,7 +51,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 	res = ATRES_TIMEOUT;
 	memset( buf, 0, sizeof(buf) );
 
-#if 0
+
 	for(i=0; i<timeout/10; i++)
 	{
 		if( SEND_EVENT_G != 2 )
@@ -102,7 +102,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
 		SEND_EVENT_G = 0;
 	}
-#endif
+#if 0
 	for(i=0; i<timeout/10; i++)
 	{
 		if( bytes >= sizeof(buf) )
@@ -143,7 +143,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
 	}
-
+#endif
 	return res;
 }
 
