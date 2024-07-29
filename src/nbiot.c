@@ -52,7 +52,7 @@ void *state_machine_thread(void *arg)
 		switch(nbiot_data->current_state)
 		{
 			case STATUS_INIT:
-				rv = send_atcmd_check_ok(&nbiot_data->comport, "AT", 500);
+				rv = nb_reset_ok(&nbiot_data->comport, "AT", 500);
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_INIT failed.\n");
@@ -64,7 +64,7 @@ void *state_machine_thread(void *arg)
 					break;
 				}
 			case STATUS_PRESEND:
-				rv = nb_status_present(&nbiot_data->comport);
+				rv = nb_hdw_ok(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_PRESEND failed.\n");
@@ -76,7 +76,7 @@ void *state_machine_thread(void *arg)
 					break;
 				}
 			case STATUS_CONFIG:
-				rv = nb_status_config(&nbiot_data->comport);
+				rv = nb_conf_ok(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug : STATUS_CONFIG failed.\n");
