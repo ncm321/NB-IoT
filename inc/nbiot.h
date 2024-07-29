@@ -28,7 +28,7 @@
 #include "logger.h"
 #include "comport.h"
 #include "at_cmd.h"
-#include "nb_at.h"
+#include "at-bc28.h"
 #include "leds.h"
 
 #define    SERIAL_DEVNAME    "/dev/ttyUSB0"
