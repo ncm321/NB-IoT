@@ -112,6 +112,11 @@ void *report_data(void *arg)
 
 	while(1)
 	{
+		if(nbiot_data->current_state != STATUS_READY)
+		{
+			msleep(10);
+			continue;
+		}
 
 		sht2x_get_temp_rh(bufferW, DATA_SIZE);
 		pthread_mutex_lock(&comport_mutex);
@@ -145,7 +150,7 @@ void *receive_data(void *arg)
 
 	while(1)
 	{
-
+		
 		memset(bufferR, 0, sizeof(bufferR));
 		memset(value, 0, sizeof(value));
 		//		printf ("Receiveing data...\n");
