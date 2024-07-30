@@ -41,7 +41,6 @@ static inline void dump_buf(const char *prompt, uint8_t *buf, int size);
 extern int    sht2x_init(const char *i2c_dev);
 extern int    sht2x_get_serialnumber(int fd, uint8_t *serialnumber, int size);
 extern int    sht2x_get_temp_humi(const char *devname, float *temp, float *rh);
-extern int    sht2x_get_temp_rh(char *buf, int size);
 
 
 #endif

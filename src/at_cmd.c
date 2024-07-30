@@ -13,10 +13,10 @@
 
 #include "at_cmd.h"
 
-int    SEND_EVENT_G = 0;
-int    LEDS_EVENT_G = 0;
+int    g_send_event = 0;
+int    g_leds_event = 0;
 
-int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expect, char *error, char *reply, int size)
+int atcmd_send(comport_t *comport, char *at, unsigned long timeout,  char *expect, char *error, char *reply, int size)
 {
 	int                    i, rv = 0;
 	int                    res = ATRES_TIMEOUT;
@@ -54,7 +54,7 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 
 	for(i=0; i<timeout/10; i++)
 	{
-		if( SEND_EVENT_G != 2 )
+		if( g_send_event != 1 )
 		{
 			usleep(1000);
 			break;
@@ -62,12 +62,12 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 
 		//判断是否是你发送的命令
 
-		if( !(strstr(g_rece_flags.SEND_EVENT_BUF, at)) )
+		if( !(strstr(g_rece_flags.send_event_buf, at)) )
 		{
 			log_error("Received is not send AT command.\n");
 			return -8;
 		}
-		length = strlen(g_rece_flags.SEND_EVENT_BUF);
+		length = strlen(g_rece_flags.send_event_buf);
 		if(length < 0)
 		{
 			log_error("send AT command \'%s\' to \'%s\' failed, rv=%d\n", at, comport->devname, rv);
@@ -75,14 +75,14 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 		}
 
 
-		if( expect && strstr(g_rece_flags.SEND_EVENT_BUF, expect) )
+		if( expect && strstr(g_rece_flags.send_event_buf, expect) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"OK\"\n", at);
 			res = ATRES_EXPECT;
 			break;
 		}
 
-		if( error && strstr(g_rece_flags.SEND_EVENT_BUF, error) )
+		if( error && strstr(g_rece_flags.send_event_buf, error) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"ERROR\"\n", at);
 			res = ATRES_ERROR;
@@ -91,65 +91,24 @@ int send_atcmd(comport_t *comport, char *at, unsigned long timeout,  char *expec
 	}
 
 	if( length > 0 )
-		log_trace("AT command reply:%s", g_rece_flags.SEND_EVENT_BUF);
+		log_trace("AT command reply:%s", g_rece_flags.send_event_buf);
 
 	if( reply && size>0 )
 	{
-		bytes = strlen(g_rece_flags.SEND_EVENT_BUF)>size ? size : strlen(g_rece_flags.SEND_EVENT_BUF);
+		bytes = strlen(g_rece_flags.send_event_buf)>size ? size : strlen(g_rece_flags.send_event_buf);
 		memset(reply, 0, size);
-		strncpy(reply, g_rece_flags.SEND_EVENT_BUF, length);
+		strncpy(reply, g_rece_flags.send_event_buf, length);
 
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
-		SEND_EVENT_G = 0;
-	}
-#if 0
-	for(i=0; i<timeout/10; i++)
-	{
-		if( bytes >= sizeof(buf) )
-			break;
-
-		rv=comport_recv( comport, buf+bytes, sizeof(buf)-bytes, 10);
-		if(rv < 0)
-		{
-			log_error("send AT command \'%s\' to \'%s\' failed, rv=%d\n", at, comport->devname, rv);
-			return -3;
-		}
-
-		bytes += rv;
-
-		if( expect && strstr(buf, expect) )
-		{
-			log_debug("send AT command \"%s\" and got reply \"OK\"\n", at);
-			res = ATRES_EXPECT;
-			break;
-		}
-
-		if( error && strstr(buf, error) )
-		{
-			log_debug("send AT command \"%s\" and got reply \"ERROR\"\n", at);
-			res = ATRES_ERROR;
-			break;
-		}
+		g_send_event = 0;
 	}
 
-	if( bytes > 0 )
-		log_trace("AT command reply:%s", buf);
-
-	if( reply && size>0 )
-	{
-		bytes = strlen(buf)>size ? size : strlen(buf);
-		memset(reply, 0, size);
-		strncpy(reply, buf, bytes);
-
-		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
-	}
-#endif
 	return res;
 }
 
 
 
-int send_atcmd_check_ok(comport_t *comport, char *at, unsigned long timeout)
+int atcmd_check_ok(comport_t *comport, char *at, unsigned long timeout)
 {
 	int                     rv;
 
@@ -159,7 +118,7 @@ int send_atcmd_check_ok(comport_t *comport, char *at, unsigned long timeout)
 		return -1;
 	}
 
-	rv=send_atcmd(comport, at, timeout, AT_OKSTR, AT_ERRSTR, NULL, 0);
+	rv=atcmd_send(comport, at, timeout, AT_OKSTR, AT_ERRSTR, NULL, 0);
 	if( ATRES_EXPECT == rv )
 	{
 		return 0;
@@ -171,7 +130,7 @@ int send_atcmd_check_ok(comport_t *comport, char *at, unsigned long timeout)
 }
 
 
-int send_atcmd_check_value(comport_t *comport, char *at, unsigned long timeout, char *reply, int size)
+int atcmd_check_value(comport_t *comport, char *at, unsigned long timeout, char *reply, int size)
 {
 	int                     rv, len;
 	char                    buf[ATCMD_REPLY_LEN];
@@ -184,7 +143,7 @@ int send_atcmd_check_value(comport_t *comport, char *at, unsigned long timeout, 
 		return -1;
 	}
 
-	rv = send_atcmd(comport, at, timeout, AT_OKSTR, AT_ERRSTR, buf, ATCMD_REPLY_LEN);
+	rv = atcmd_send(comport, at, timeout, AT_OKSTR, AT_ERRSTR, buf, ATCMD_REPLY_LEN);
 	if( rv <= 0 )
 	{
 		return -2;
@@ -265,7 +224,7 @@ int parser_request_value(char *buf, char *key, char *value, int size)
 	return 0;
 }
 
-int send_atcmd_request(comport_t *comport, char *at, unsigned long timeout, char *reply, int size)
+int atcmd_send_request(comport_t *comport, char *at, unsigned long timeout, char *reply, int size)
 {
 	int                     i = 0;
 	int                     rv;
@@ -278,7 +237,7 @@ int send_atcmd_request(comport_t *comport, char *at, unsigned long timeout, char
 		return -1;
 	}
 
-	rv = send_atcmd(comport, at, timeout, AT_OKSTR, AT_ERRSTR, buf, ATCMD_REPLY_LEN);
+	rv = atcmd_send(comport, at, timeout, AT_OKSTR, AT_ERRSTR, buf, ATCMD_REPLY_LEN);
 	if( rv <= 0 )
 	{
 		return -2;

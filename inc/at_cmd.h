@@ -28,8 +28,8 @@
 
 #define AT_SUFFIX         "\r\n"
 
-extern int       SEND_EVENT_G;
-extern int       LEDS_EVENT_G;
+extern int       g_send_event;
+extern int       g_leds_event;
 
 enum
 {
@@ -39,15 +39,15 @@ enum
 };
 
 
-int send_atcmd(comport_t *comport, char *at, unsigned long timeout, char *expect, char *error, char *reply, int size);
+int atcmd_send(comport_t *comport, char *at, unsigned long timeout, char *expect, char *error, char *reply, int size);
 
 
-int send_atcmd_check_ok(comport_t *comport, char *at, unsigned long timeout);
+int atcmd_check_ok(comport_t *comport, char *at, unsigned long timeout);
 
-int send_atcmd_check_value(comport_t *comport, char *at, unsigned long timeout, char *reply, int size);
+int atcmd_check_value(comport_t *comport, char *at, unsigned long timeout, char *reply, int size);
 
 int parser_request_value(char *buf, char *key, char *value, int size);
 
-int send_atcmd_request(comport_t *comport, char *at, unsigned long timeout, char *reply, int size);
+int atcmd_send_request(comport_t *comport, char *at, unsigned long timeout, char *reply, int size);
 
 #endif

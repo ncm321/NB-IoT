@@ -13,6 +13,9 @@
 
 #include "nbiot.h"
 
+int g_temp_interval = 10;
+void print_usage(char *progname);
+
 static inline void msleep(unsigned long ms)
 {
 	struct timespec cSleep;
@@ -34,13 +37,16 @@ static inline void msleep(unsigned long ms)
 
 void init_mutex() {
 	if (pthread_mutex_init(&comport_mutex, NULL) != 0) {
-		printf("Mutex init failed\n");
+		log_error ("Mutex init failed\n");
 		exit(EXIT_FAILURE);
 	}
 }
+void float_to_hex_string(float f, char hexStr[9]) {
+	unsigned char *bytePtr = (unsigned char*)&f;
+	sprintf(hexStr, "%02X%02X%02X%02X", bytePtr[3], bytePtr[2],               bytePtr[1],     bytePtr[0]);
+}
 
-
-void *state_machine_thread(void *arg)
+void *nbiot_mgr_thread(void *arg)
 {
 	nb_config_t*     nbiot_data = (nb_config_t*)arg;
 	int              rv;
@@ -55,7 +61,7 @@ void *state_machine_thread(void *arg)
 				rv = nb_reset_ok(&nbiot_data->comport);
 				if( rv<0 )
 				{
-					printf ("debug:STATUS_INIT failed.\n");
+					log_error ("debug:STATUS_INIT failed.\n");
 					break;
 				}
 				else
@@ -67,7 +73,7 @@ void *state_machine_thread(void *arg)
 				rv = nb_hdw_ok(&nbiot_data->comport);
 				if( rv<0 )
 				{
-					printf ("debug:STATUS_PRESEND failed.\n");
+					log_error ("debug:STATUS_PRESEND failed.\n");
 					break;
 				}
 				else
@@ -79,7 +85,7 @@ void *state_machine_thread(void *arg)
 				rv = nb_conf_ok(&nbiot_data->comport);
 				if( rv<0 )
 				{
-					printf ("debug : STATUS_CONFIG failed.\n");
+					log_error ("debug : STATUS_CONFIG failed.\n");
 					break;
 				}
 				else
@@ -89,8 +95,8 @@ void *state_machine_thread(void *arg)
 				}
 			case STATUS_READY:
 
-				printf ("READY!!!!!!\n");
-				sleep(30);
+				log_info ("READY!!!!!!\n");
+				sleep(1);
 				break;
 			default:
 				break;
@@ -105,10 +111,14 @@ void *report_data(void *arg)
 {
 	nb_config_t*      nbiot_data = (nb_config_t*)arg;
 	int               rv;
-	char              bufferW[DATA_SIZE];
+	char              tx_buffer[DATA_SIZE];
+	float             temp;
+	float             humi;
+	char              hex_str_temp[9];
+	char              hex_str_humi[9];
 
 
-	printf ("test state:%d\n", nbiot_data->current_state);
+	log_debug ("test state:%d\n", nbiot_data->current_state);
 
 	while(1)
 	{
@@ -118,17 +128,27 @@ void *report_data(void *arg)
 			continue;
 		}
 
-		sht2x_get_temp_rh(bufferW, DATA_SIZE);
-		pthread_mutex_lock(&comport_mutex);
-		rv = comport_send(&nbiot_data->comport, bufferW, DATA_SIZE );
-		pthread_mutex_unlock(&comport_mutex);
+		memset(hex_str_temp, 0, sizeof(hex_str_temp));
+		memset(hex_str_humi, 0, sizeof(hex_str_humi));
+
+		rv = sht2x_get_temp_humi(SHT2X_DEVNAME, &temp, &humi);
+		if( rv<0 )
+		{   
+			log_error("SHT2X get temperature and humidity failure\n");
+		}   
+
+		float_to_hex_string(temp, hex_str_temp);
+		float_to_hex_string(humi, hex_str_humi);
+
+		snprintf(tx_buffer, sizeof(tx_buffer), "AT+QLWULDATAEX=13,0200250008%s%s,0x0100\r\n", hex_str_temp, hex_str_humi);
+		rv = atcmd_check_ok(&nbiot_data->comport, tx_buffer, 5000);
 		if( rv<0 )
 		{
-			printf ("Send AT data failure.\n");
+			log_error ("Send AT data failure.\n");
 		}
 		else
-			printf ("Send successful:%s\n",bufferW);
-		sleep(10);
+			log_info ("Send successful:%s\n",tx_buffer);
+		sleep(g_temp_interval);
 	}
 }
 
@@ -138,198 +158,86 @@ void *receive_data(void *arg)
 	nb_config_t*      nbiot_data = (nb_config_t*)arg;
 	int               rv;
 	int               bytes = 0;
-	fd_set            read_fds;
-	char              value[256];
-	char              bufferR[1024];
+	char              rx_buffer[1024];
 	comport_t         comport;
-	int               timeout_ms = 10000;
-	struct timeval    timeout;
 
 	comport = nbiot_data->comport;
 
 
 	while(1)
 	{
-		
-		memset(bufferR, 0, sizeof(bufferR));
-		memset(value, 0, sizeof(value));
-		//		printf ("Receiveing data...\n");
 
+		memset(rx_buffer, 0, sizeof(rx_buffer));
 
-		FD_ZERO(&read_fds);
-		FD_SET(comport.fd, &read_fds);
-
-		timeout.tv_sec = timeout_ms/1000;
-		timeout.tv_usec = (timeout_ms % 1000) * 1000;
-		//		printf ("debug:comport->fd:%d\n",comport.fd);
-		rv =select((comport.fd)+1, &read_fds, NULL, NULL, &timeout);
-		if( rv<0 )
+		bytes = comport_recv(&comport, rx_buffer, sizeof(rx_buffer), 10);
+WAIT_NEWDATA:
+		rv = comport_recv(&comport, rx_buffer+bytes, sizeof(rx_buffer)-bytes, 10);
+		if( rv>0 )
 		{
-			printf ("Select error\n");
+			bytes += rv;
+			goto WAIT_NEWDATA;
 		}
-		else if( rv==0 )
+
+		rx_buffer[bytes] = '\0';
+
+		if( strstr(rx_buffer, "+NNMI:") )
 		{
-			printf ("timeuot\n");
+			memset(g_rece_flags.leds_event_buf, 0, sizeof(g_rece_flags.leds_event_buf));
+			//copy receive data，excute asyn_led_process
+			strcpy(g_rece_flags.leds_event_buf, rx_buffer);
+			g_leds_event = 1;
+			log_debug ("debug:led parser:%d\n",g_leds_event);
 		}
 		else
 		{
-			if( FD_ISSET(comport.fd, &read_fds))
+			memset(g_rece_flags.send_event_buf, 0, sizeof(g_rece_flags.send_event_buf));
+			//copy receive data, AT reply
+			strcpy(g_rece_flags.send_event_buf, rx_buffer);
+			if(nbiot_data->current_state == STATUS_READY)
 			{
-				bytes = comport_recv(&comport, bufferR, sizeof(bufferR), 100);
-
-				printf ("debug:test:received buffer:%s\n",bufferR);
-				if( rv<0 )
-				{
-					printf ("Read failure.\n");
-				}
-				bufferR[bytes] = '\0';
-
-				if( strstr(bufferR, "+NNMI:") )
-				{
-					memset(g_rece_flags.LEDS_EVENT_BUF, 0, sizeof(g_rece_flags.LEDS_EVENT_BUF));
-					//复制接收到的内容，让处理LED线程去执行
-					strcpy(g_rece_flags.LEDS_EVENT_BUF, bufferR);
-					LEDS_EVENT_G = 1;
-					printf ("debug:led parser:%d\n",LEDS_EVENT_G);
-				}
-				else
-				{
-					memset(g_rece_flags.SEND_EVENT_BUF, 0, sizeof(g_rece_flags.SEND_EVENT_BUF));
-					//复制接收到的内容，让处理AT命令的回复的线程去执行
-					strcpy(g_rece_flags.SEND_EVENT_BUF, bufferR);
-					if(nbiot_data->current_state == STATUS_READY)
-					{
-						SEND_EVENT_G = 2;
-					}
-					else
-						SEND_EVENT_G = 1;
-				}
-
+				g_send_event = 1;
 			}
 		}
+
 	}
 }
 
 void *asyn_process_leds(void *arg)
 {
-	int               rv;
-	leds_t            leds =
-	{   
-		.leds = leds_info,
-		.count = LED_MAX,
 
-	};  
-
-	if( (rv=init_led(&leds))<0 )
-	{
-		printf ("initial leds gpio failure,rv=%d\n",rv);
-	}
-	printf ("进入解析\n");
 	while(1)
 	{
-		if(LEDS_EVENT_G ==1)
+		if(g_leds_event ==1)
 		{
-			printf ("test:Z进循环\n");
-			if (strstr(g_rece_flags.LEDS_EVENT_BUF, "0101"))
+			if (strstr(g_rece_flags.leds_event_buf, "0101"))
 			{
-				printf ("Turning LED on\n");
-				open_led(&leds, LED_R);
+				turn_led(LED_R, ON);
 			}
-			else if(strstr(g_rece_flags.LEDS_EVENT_BUF, "0100"))
+			else if(strstr(g_rece_flags.leds_event_buf, "0100"))
 			{
-				printf ("Turning led Off\n");
-				close_led(&leds, LED_R);
+				turn_led(LED_R, OFF);
 			}
 		}
 		else
 		{
 			continue;
 		}
-		LEDS_EVENT_G = 0;
+		g_leds_event = 0;
 	}
 }
 
 
-void *process_report(void *arg)
+
+
+void print_usage(char *progname)
 {
+    printf("%s:usage:\n",progname);
+    printf ("%s is nbiot program running on IMX6ULL\n", progname);
+    printf("-n(--devname) :specify serial port devname.\n");
+    printf ("-t(--time)  :temp upload time.Default 10s\n");
+    printf ("-b(--background) :running in background mode\n");
+    printf("-h(--help)   :print this help information.\n");
+    printf ("test:make successfully?\n");
 
-	int           rv;
-
-	while( 1 )
-	{
-		if( SEND_EVENT_G==1 )
-		{
-			if( strstr(g_rece_flags.SEND_EVENT_BUF, "OK") )
-			{
-				printf("Receive:%s",g_rece_flags.SEND_EVENT_BUF);
-			}
-		}
-		else
-		{
-			continue;
-		}
-		SEND_EVENT_G = 0;
-	}
+    return ;
 }
-
-int Linux_Create()
-{
-	pthread_t      report_thread,receive_thread,state_thread,leds_process_thread,send_process_thread;
-	const char    *dev = "/dev/ttyUSB0";
-	int            rv;
-	nb_config_t    nbiot_data;
-	comport_t      comport;
-
-
-	rv = comport_open(&nbiot_data.comport, SERIAL_DEVNAME, 9600, "8n1n");
-	if( rv<0 )
-	{
-		perror("Failed to open comport");
-		return -1;
-	}
-	nbiot_data.current_state = 0;
-
-
-	if(pthread_create(&state_thread, NULL, state_machine_thread, &nbiot_data) != 0)
-	{
-		perror("Failed to create state thread");
-		return -2;
-	}
-	if( pthread_create(&report_thread, NULL, report_data,
-				&nbiot_data) != 0){
-		perror("Failed to create report thread");
-		return -3;
-	}
-
-	if ( pthread_create(&receive_thread, NULL, receive_data,
-				&nbiot_data) !=0 )
-	{
-		perror("Failed to create receive thread");
-		return -4;
-	}
-
-	if ( pthread_create(&leds_process_thread, NULL, asyn_process_leds,
-				&nbiot_data) !=0 )
-	{   
-		perror("Failed to create receive thread");
-		return -5; 
-	}
-	if ( pthread_create(&send_process_thread, NULL, process_report,
-				&nbiot_data) !=0 )
-	{   
-		perror("Failed to create receive led_process thread");
-		return -6; 
-	}
-
-
-	pthread_join(state_thread, NULL);
-	pthread_join(report_thread, NULL);
-	pthread_join(receive_thread, NULL);
-	pthread_join(leds_process_thread, NULL);
-	pthread_join(send_process_thread, NULL);
-
-	comport_close(&nbiot_data.comport);
-
-
-	return 0;
-} 

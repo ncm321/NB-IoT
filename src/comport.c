@@ -245,10 +245,14 @@ int comport_send(comport_t *comport, char *data, int data_bytes)
 		return -2;
 	}
 
-	tcflush( comport->fd, TCIFLUSH);
 
 	ptr = data;
 	left = data_bytes;
+
+	//lock
+//	pthread_mutex_lock(&comport_mutex);
+	
+	tcflush( comport->fd, TCIFLUSH);
 
 	while( left > 0 )
 	{
@@ -259,12 +263,16 @@ int comport_send(comport_t *comport, char *data, int data_bytes)
 		if( rv<0 )
 		{
 			rv = -3;
+	    //  pthread_mutex_unlock(&comport_mutex);
 			break;
 		}
 
 		left -= rv;
 		ptr += rv;
 	}
+
+//	pthread_mutex_unlock(&comport_mutex);
+	//unlock
 
 	return rv;
 }

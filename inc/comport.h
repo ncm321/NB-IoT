@@ -46,8 +46,8 @@ typedef  struct  comport_s{
 
 typedef struct rece_flags_s
 {
-	char       LEDS_EVENT_BUF[RECEIVE_SIZE];
-	char       SEND_EVENT_BUF[RECEIVE_SIZE];
+	char       leds_event_buf[RECEIVE_SIZE];
+	char       send_event_buf[RECEIVE_SIZE];
 }rece_flags_t;
 
 extern rece_flags_t    g_rece_flags;

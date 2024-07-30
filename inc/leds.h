@@ -28,6 +28,7 @@
 #include <gpiod.h>
 
 #include "gpiod.h"
+#include "logger.h"
 #define DELAY     300
 
 #define ON        1
@@ -70,11 +71,9 @@ typedef struct leds_s
 }leds_t;
 
 
-int init_led(leds_t *leds);
-int term_led(leds_t *leds);
-int turn_led(leds_t *leds, int which, int cmd);
-int open_led(leds_t *leds, int which);
-int close_led(leds_t *leds, int which);
+int init_led(void);
+int term_led(void);
+int turn_led(int which, int cmd);
 static inline void msleep(unsigned long ms);
 void sig_handler(int signum);
 

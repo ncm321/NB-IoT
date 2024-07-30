@@ -33,6 +33,7 @@
 
 #define    SERIAL_DEVNAME    "/dev/ttyUSB0"
 #define    DATA_SIZE         512
+
 extern enum status_s{
 	STATUS_INIT,
 	STATUS_PRESEND,
@@ -46,16 +47,15 @@ typedef struct nb_config_s{
 }nb_config_t;
 
 extern pthread_mutex_t   state_mutex;
+extern int               g_temp_interval;
 
-
-void *state_machine_thread(void *arg);
+void *nbiot_mgr_thread(void *arg);
 void  float_to_hex_string(float f, char hexStr[9]);
 void *report_data(void *arg);
 void *receive_data(void *arg);
 void *asyn_process_leds(void *arg);
-void *process_report(void *arg);
-int  Linux_Create();
 static inline void msleep(unsigned long ms);
+void print_usage(char *progname);
 
 
 #endif

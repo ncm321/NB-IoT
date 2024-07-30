@@ -1,5 +1,12 @@
 #include "leds.h"
 
+static leds_t            s_leds =
+{   
+	.leds = leds_info,
+	.count = LED_MAX,
+
+};  
+
 
 void sig_handler(int signum)
 {
@@ -19,26 +26,21 @@ void sig_handler(int signum)
 
 
 
-int term_led(leds_t *leds)
+int term_led( void )
 {
 	int            i;
 	led_t         *led;
 
-	printf("terminate RGB Led gpios\n");
+	log_info ("terminate RGB Led gpios\n");
 
-	if( !leds )
-	{
-		printf("Invalid input arguments\n");
-		return -1;
-	}
 
-	for(i=0; i<leds->count; i++)
+	for(i=0; i< s_leds.count; i++)
 	{
-		led = &leds->leds[i];
+		led = &s_leds.leds[i];
 
 		if( led->request )
 		{
-			turn_led(leds, i, OFF);
+			turn_led(i, OFF);
 			gpiod_line_request_release(led->request);
 		}
 	}
@@ -48,7 +50,7 @@ int term_led(leds_t *leds)
 
 
 
-int init_led(leds_t *leds)
+int init_led(void)
 {
 	led_t                       *led;
 	int                          i, rv = 0;
@@ -59,17 +61,11 @@ int init_led(leds_t *leds)
 	struct gpiod_request_config *req_cfg;   /* gpio consumer, it can be NULL */
 
 
-	if( !leds )
-	{
-		printf("Invalid input arguments\n");
-		return -1;
-	}
-
 
 	settings = gpiod_line_settings_new();
 	if (!settings)
 	{
-		printf("unable to allocate line settings\n");
+		log_error("unable to allocate line settings\n");
 		rv = -2;
 		goto cleanup;
 
@@ -80,7 +76,7 @@ int init_led(leds_t *leds)
 	if( !line_cfg )
 	{
 
-		printf ("unable to allocate the line config structure\n");
+		log_error ("unable to allocate the line config structure\n");
 		rv = -2;
 		goto cleanup;
 	}
@@ -89,22 +85,22 @@ int init_led(leds_t *leds)
 	if( !req_cfg )
 	{
 
-		printf ("unable to allocate the request config structure\n");
+		log_error ("unable to allocate the request config structure\n");
 		rv = -2;
 		goto cleanup;
 	}
 
 
-	for(i=0; i<leds->count; i++)
+	for(i=0; i<s_leds.count; i++)
 	{
-		led = &leds->leds[i];
+		led = &s_leds.leds[i];
 
 		snprintf(chip_dev, sizeof(chip_dev), "/dev/gpiochip%d", led->chip_num);
 		chip = gpiod_chip_open(chip_dev);
 		if( !chip )
 		{
 
-			printf ("open gpiochip failure, maybe you need running as root\n");
+			log_error ("open gpiochip failure, maybe you need running as root\n");
 			rv = -3;
 			goto cleanup;
 		}
@@ -132,7 +128,7 @@ int init_led(leds_t *leds)
 cleanup:
 	if( rv<0 )
 	{
-		term_led(leds);
+		term_led();
 	}
 	if( line_cfg )
 	{
@@ -147,8 +143,8 @@ cleanup:
 		gpiod_line_settings_free(settings);
 	}
 
-	return rv;
 
+	return rv;
 }	 
 
 static inline void msleep(unsigned long ms)
@@ -173,67 +169,29 @@ static inline void msleep(unsigned long ms)
 }
 
 
-int turn_led(leds_t *leds, int which, int cmd)
+int turn_led(int which, int cmd)
 {
-	led_t       *led;
 	int          rv = 0;
 	int          value = 0;
+	led_t       *led;
 
-	if( !leds || which<0 || which>=leds->count )
+
+	if( (rv=init_led())<0 )
+	{   
+		log_error ("initial leds gpio failure,rv=%d\n",rv);
+	}   
+	if(  which<0 || which>=s_leds.count )
 	{
 
-		printf ("Invalid input arguments\n");
+		log_debug ("Invalid input arguments\n");
 		return -1;
 	}
 
 
-
-	led = &leds->leds[which];
+	led = &s_leds.leds[which];
 
 	value = OFF == cmd ? GPIOD_LINE_VALUE_ACTIVE : GPIOD_LINE_VALUE_INACTIVE;
 
 	gpiod_line_request_set_value(led->request, led->gpio_num, value);
 	return 0;
 }
-
-int open_led(leds_t *leds, int which)
-{
-	led_t         *led;
-	int            rv=0;
-
-	if( !leds || which<0 || which >= leds->count)
-	{
-
-		printf ("Invalid input arguments\n");
-		return -1;
-	}
-
-
-	led = &leds->leds[which];
-
-	gpiod_line_request_set_value(led->request, led->gpio_num, ON);
-
-	return 0;
-}
-
-int close_led(leds_t *leds, int which)
-{
-	led_t         *led;
-	int            rv=0;
-
-	if( !leds || which<0 || which >= leds->count)
-	{   
-
-		printf ("Invalid input arguments\n");
-		return -1;
-	}       
-
-
-
-	led = &leds->leds[which];
-
-	gpiod_line_request_set_value(led->request, led->gpio_num, OFF);
-
-	return 0;
-}
-

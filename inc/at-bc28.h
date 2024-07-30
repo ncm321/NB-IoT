@@ -2,14 +2,14 @@
  * NB-IoT_test.h
  *
  *  Created on: 2024年7月3日
- *      Author: 杨璐
+ *      Author: niuchunmin
  */
 
 #ifndef INC_AT_BC28_H_
 #define INC_AT_BC28_H_
 
 #include "at_cmd.h"
-
+#define IP_PORT "221.229.214.202,5683"
 enum
 {
 	STAT_INIT,
@@ -18,17 +18,17 @@ enum
 	STAT_RDY,
 };
 
-typedef struct NBiot_conf_s
+typedef struct nbiot_conf_s
 {
 	int		status;
 	char	manufacturers[64];
 	char	model[64];
-	char	IMEI[64];
-	char	SIM[64];
-	char	CSQ[64];
-}NBiot_conf_t;
+	char	imei[64];
+	char	sim[64];
+	char	csq[64];
+}nbiot_conf_t;
 
-extern NBiot_conf_t		NBconf;
+extern nbiot_conf_t		nbconf;
 
 extern int bc28_check_at(comport_t *comport);
 extern int bc28_reset(comport_t *comport);
