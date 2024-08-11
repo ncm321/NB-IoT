@@ -74,24 +74,11 @@
 git clone https://giyhub.com/ncm321/NB-IoT.git
 ```
 
-**2.下载需要的库（gpiod）** 
+**2.执行makefile则自动生成gpiod库和生成静态库，并生成可执行程序** 
 
 ```sh
-cd lib/gpiod
 make
 ```
-
-**3.进入src源文件夹，执行makefile生成库文件**
-
-可在../lib文件夹中看见 cd src make ls ../lib 
-
-**4.退出src执行makefile生成nbiot的可执行文件** 
-
-cd .. make ls nbiot
-
-**5.执行nbiot，注意添加参数**
-
--h打印帮助信息，-n设备路径，-t采样温湿度间隔 ./nbiot -n "/dev/ttyUSB0" -t 10
 
 ## bc28模块实物图：
 
