@@ -5,34 +5,36 @@
  *      Author: 杨璐
  */
 #include "at_cmd.h"
-#define CONFIG_OS_LINUX
-//#define CONFIG_OS_STM32
+#define CONFIG_OS_STM32
+//#define CONFIG_OS_LINUX
 
-atcmd_t g_atcmd;
-int         LEDS_EVENT_G=0;
-int         SEND_EVENT_G=0;
+
+atcmd_t	g_atcmd;
+int         g_send_event = 0;
+int         g_leds_event = 0;
 
 #ifdef CONFIG_OS_STM32
+
 EventGroupHandle_t		Event_Handle;
 SemaphoreHandle_t		xSemaphore;
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	if (huart->Instance == USART3)
-	{
-		HAL_UART_Receive_IT(comport.dev, &data, 1);
-		if(xStreamBufferSpacesAvailable(xStreamBuffer)>0)
-		{
-			xStreamBufferSendFromISR(xStreamBuffer, &data, 1, &xHigherPriorityTaskWoken);
-		}
-		if('\n' == data)
-		{
-			xSemaphoreGiveFromISR(xSemaphore,&xHigherPriorityTaskWoken);
-		}
-	}
-	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    if (huart->Instance == USART3)
+    {
+    	HAL_UART_Receive_IT(comport.dev, &data, 1);
+        if(xStreamBufferSpacesAvailable(xStreamBuffer)>0)
+        {
+        	xStreamBufferSendFromISR(xStreamBuffer, &data, 1, &xHigherPriorityTaskWoken);
+        }
+        if('\n' == data)
+        {
+        	xSemaphoreGiveFromISR(xSemaphore,&xHigherPriorityTaskWoken);
+        }
+    }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 int atcmd_pars(char *buf)
@@ -79,7 +81,7 @@ int atcmd_pars(char *buf)
 	{
 		strncpy(g_atcmd.xAtCmdReply,ptr,bytes);
 		printf("got AT reply:%s",g_atcmd.xAtCmdReply);
-		xEventGroupSetBits(Event_Handle,Receive_EVENT);
+		xEventGroupSetBits(Event_Handle,Receive_Event);
 		return 1;
 	}
 	return 0;
@@ -87,9 +89,9 @@ int atcmd_pars(char *buf)
 
 int parser_async_message(char *buf,char *keystr)
 {
-	char        *ptr,*end;
-	int         bytes = 0;
-	char        Asynbuf[128];
+	char		*ptr,*end;
+	int			bytes = 0;
+	char		Asynbuf[128];
 
 	if(!(ptr=strstr(buf,keystr)))
 		return -1;
@@ -97,10 +99,11 @@ int parser_async_message(char *buf,char *keystr)
 	if(!(end=strstr(ptr+strlen(keystr),"\r\n")))
 		return -2;
 
-	bytes = end-ptr+2;
+	ptr = ptr+strlen(keystr);
+	bytes = end-ptr;
 
-	strncpy(Asynbuf,buf,(size_t)bytes);
-	//printf("^^^^^^^^Asynbuf=%s\r\n",Asynbuf);
+	strncpy(Asynbuf,ptr,(size_t)bytes);
+	printf("^^^^^^^^Asynbuf=%s\r\n",Asynbuf);
 
 	if(strstr(Asynbuf,"0622B8") && strstr(Asynbuf,"0101"))
 	{
@@ -117,22 +120,22 @@ int parser_async_message(char *buf,char *keystr)
 	memset(Asynbuf,0,sizeof(Asynbuf));
 	return 0;
 }
-
 #endif
+
 int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char *error, char *reply,size_t size)
 {
 #ifdef CONFIG_OS_STM32
 	EventBits_t		r_event;
 #endif
 	char			*ptr,*end;
-	int				res = 0;
-	int             i,bytes;
-	int             rv;
+	int				res = 0,rv;
+	int				i,bytes;
 
 	if(!comport || !at)
 		return -1;
 
 #ifdef CONFIG_OS_LINUX
+
 	if( comport->dev <= 0 )
 	{
 		log_error("comport[%s] not opened\n");
@@ -149,14 +152,17 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 	if(comport_send(comport, g_atcmd.xAtCmd, strlen(g_atcmd.xAtCmd)) <0 )
 	{
 		printf("Send AT command failed\r\n");
+#ifdef CONFIG_OS_LINUX
+		log_error("send AT command \"%s\" to \"%s\" failed, rv=%d\n", at, comport->devname, rv);
+#endif
 		res = -2;
 		goto out;
 	}
 	printf("Send AT command OK\r\n");
 
 #ifdef	CONFIG_OS_STM32
-	r_event = xEventGroupWaitBits(Event_Handle,Receive_EVENT,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
-	if(!(r_event&Receive_EVENT))
+	r_event = xEventGroupWaitBits(Event_Handle,Receive_Event,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
+	if(!(r_event&Receive_Event))
 	{
 		res = -3;
 		goto out;
@@ -189,58 +195,65 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 		goto out;
 	}
 
-#endif
+#elif (defined CONFIG_OS_LINUX)
 
-#ifdef CONFIG_OS_LINUX
 	res = ATRES_TIMEOUT;
 	memset( g_atcmd.xAtCmdReply, 0, ATCMD_REPLY_LEN );
 
+
 	for(i=0; i<timeout/10; i++)
 	{
-		if( bytes >= sizeof(g_atcmd.xAtCmdReply) )
+		if( g_send_event != 1 )
+		{
+			usleep(1000);
 			break;
+		}
 
-		rv=comport_recv( comport, g_atcmd.xAtCmdReply+bytes, sizeof(g_atcmd.xAtCmdReply)-bytes, 10);
-		if(rv < 0)
+		if( !(strstr(g_rece_flags.send_event_buf, at)) )
+		{
+			log_error("Received is not send AT command.\n");
+			return -8;
+		}
+		length = strlen(g_rece_flags.send_event_buf);
+		if(length < 0)
 		{
 			log_error("send AT command \'%s\' to \'%s\' failed, rv=%d\n", at, comport->devname, rv);
 			return -3;
 		}
 
-		bytes += rv;
 
-		if( expect && strstr(g_atcmd.xAtCmdReply, expect) )
+		if( expect && strstr(g_rece_flags.send_event_buf, expect) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"OK\"\n", at);
-			res = 0;
+			res = ATRES_EXPECT;
 			break;
 		}
 
-		if( error && strstr(g_atcmd.xAtCmdReply, error) )
+		if( error && strstr(g_rece_flags.send_event_buf, error) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"ERROR\"\n", at);
-			res = -1;;
+			res = ATRES_ERROR;
 			break;
 		}
 	}
 
-	if( bytes > 0 )
-		log_trace("AT command reply:%s", g_atcmd.xAtCmdReply);
+	if( length > 0 )
+		log_trace("AT command reply:%s", g_rece_flags.send_event_buf);
 
 	if( reply && size>0 )
 	{
-		bytes = strlen(g_atcmd.xAtCmdReply)>size ? size : strlen(g_atcmd.xAtCmdReply);
+		bytes = strlen(g_rece_flags.send_event_buf)>size ? size : strlen(g_rece_flags.send_event_buf);
 		memset(reply, 0, size);
-		strncpy(reply, g_atcmd.xAtCmdReply, bytes);
+		strncpy(reply, g_rece_flags.send_event_buf, length);
 
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
+		g_send_event = 0;
 	}
-
 #endif
 out:
 	memset(g_atcmd.xAtCmd,0,sizeof(g_atcmd.xAtCmd));
 	memset(g_atcmd.xAtCmdReply,0,sizeof(g_atcmd.xAtCmdReply));
-	return res; 
+	return res;
 }
 
 int atcmd_check_OK(comport_t *comport, char *at, uint32_t timeout)

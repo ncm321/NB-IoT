@@ -2,11 +2,11 @@
  * NB-IoT_test.c
  *
  *  Created on: Jul 2, 2024
- *      Author: niuchunmin
+ *      Author: 杨璐
  */
 #include "at-bc28.h"
 
-NBiot_conf_t		NBconf;
+nbiot_conf_t		g_nbconf;
 
 int bc28_check_at(comport_t *comport)
 {
@@ -28,7 +28,7 @@ int bc28_reset(comport_t *comport)
 		return -1;
 	}
 	else
-		printf("BC28 module Reset OK\r\n");
+		printf("bc28 module Reset OK\r\n");
 	return 0;
 }
 
@@ -41,7 +41,6 @@ int bc28_get_manuf(comport_t *comport, char *reply_buf, size_t size)
 	}
 	else
 	{
-		strncpy(NBconf.manufacturers,reply_buf,strlen(reply_buf));
 		printf("View module manufacturers OK.\r\n");
 	}
 	return 0;
@@ -56,7 +55,6 @@ int bc28_get_module(comport_t *comport, char *reply_buf, size_t size)
 	}
 	else
 	{
-		strncpy(NBconf.model,reply_buf,size);
 		printf("View module model OK.\r\n");
 	}
 	return 0;
@@ -69,7 +67,6 @@ int bc28_check_imei(comport_t *comport, char *reply_buf, size_t size)
 		printf("Check module IMEI number is not normal\r\n");
 		return -1;
 	}
-	strncpy(NBconf.IMEI,reply_buf,size);
 	printf("Check module IMEI number is normal\r\n");
 
 	return 0;
@@ -82,7 +79,6 @@ int bc28_check_simcd(comport_t *comport, char *reply_buf, size_t size)
 		printf("SIM card does not exist\r\n");
 		return -1;
 	}
-	strncpy(NBconf.SIM,reply_buf,size);
 	printf("SIM card exists\r\n");
 
 	return 0;
@@ -119,8 +115,7 @@ int bc28_check_csq(comport_t *comport, char *reply_buf, size_t size)
 		printf("The module signal test failed,try again...\r\n");
 		return -1;
 	}
-	strncpy(NBconf.CSQ,reply_buf,size);
-	printf("The module signal test is normal\r\n");
+	printf("The module signal test is normal,reply_buf:%s\r\n",reply_buf);
 
 	return 0;
 }
@@ -149,7 +144,7 @@ int bc28_check_attach_net(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_check_reg_status(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_reg_status(comport_t *comport, char *reply_buf,size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CEREG?", 500,reply_buf,size)<0)
 	{
@@ -161,7 +156,7 @@ int bc28_check_reg_status(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_check_ip(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_ip(comport_t *comport, char *reply_buf,size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CGPADDR", 500,reply_buf,size)<0)
 	{
@@ -175,10 +170,9 @@ int bc28_check_ip(comport_t *comport, char *reply_buf, size_t size)
 
 int bc28_set_ip_port(comport_t *comport, char *reply_buf, size_t size)
 {
-	char        buf[256] = {0};
-
-	snprintf(buf, 256, "AT+NCDP=%s",IP_PORT);
-	if(atcmd_send(comport, buf, 500, AT_OKSTR, AT_ERRSTR, reply_buf, size)<0)
+	char		buf[256]={0};
+	snprintf(buf,sizeof(buf),"AT+NCDP=%s",NCDP);
+	if(atcmd_send(comport, buf,500,AT_OKSTR,AT_ERRSTR,reply_buf,size)<0)
 	{
 		printf("The module fails to connect to the cloud platform failed, try again...\r\n");
 		return -1;
@@ -216,24 +210,24 @@ int nb_reset_ok(comport_t *comport)
 {
 	if(bc28_check_at(comport)<0)
 		return -1;
+	/*if(bc28_reset(comport)<0)
+		return -1;*/
 
 	return 0;
 }
 
 int nb_hdw_ok(comport_t *comport)
 {
-	char 		reply_buf[256];
-
-	if(bc28_get_manuf(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_get_manuf(comport, g_nbconf.manufacturers, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_get_module(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_get_module(comport, g_nbconf.model, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_check_imei(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_imei(comport, g_nbconf.imei, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_check_simcd(comport, reply_buf, ATBUF_SIZE))
+	if(bc28_check_simcd(comport, g_nbconf.sim, ATBUF_SIZE)<0)
 		return -1;
 
 	return 0;
@@ -241,7 +235,7 @@ int nb_hdw_ok(comport_t *comport)
 
 int nb_conf_ok(comport_t *comport)
 {
-	char 		reply_buf[256];
+	char 		reply_buf[ATBUF_SIZE];
 
 	if(bc28_set_autocnt(comport)<0)
 		return -1;
@@ -249,7 +243,7 @@ int nb_conf_ok(comport_t *comport)
 	if(bc28_check_cfun(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_check_csq(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_csq(comport, g_nbconf.csq, ATBUF_SIZE)<0)
 		return -1;
 
 	if(bc28_set_attach_net(comport)<0)

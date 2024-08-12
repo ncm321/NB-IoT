@@ -19,19 +19,21 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 
-#define CONFIG_OS_LINUX
-//#define CONFIG_OS_STM32
+
 #include "usart.h"
 
-#ifdef CONFIG_OS_STM32
+
 /* USER CODE BEGIN 0 */
+#ifdef CONFIG_OS_STM32
 uint8_t					data;
 StreamBufferHandle_t	xStreamBuffer;
 comport_t				comport;
-/* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
+
+/* USER CODE END 0 */
+
 
 /* USART1 init function */
 
@@ -216,6 +218,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
   /* USER CODE END USART3_MspDeInit 1 */
   }
 }
+
 
 /* USER CODE BEGIN 1 */
 #ifdef __GNUC__
@@ -460,7 +463,7 @@ int comport_send(comport_t *comport, char *data, int bytes)
 	}
 #ifdef	CONFIG_OS_STM32
 
-	if( HAL_UART_Transmit(comport->dev, (uint8_t *)data, bytes,0xFFFF) != HAL_OK)
+	if(HAL_UART_Transmit(comport->dev, (uint8_t *)data, bytes,0xFFFF) != HAL_OK)
 		return -1;
 	else
 		return 0;

@@ -47,10 +47,10 @@
 |   |   +--- makefile         #生成静态库
 |   +---lib
 |   |   +--- gpiod
-|   |      +--- build.sh     #gpiod库的构建脚本
-|   |      +--- makefile  
-+--- makefile             #进行编译连接生成可执行文件
-+---main.c                    #业务逻辑层代码
+|   |   +--- build.sh     #gpiod库的构建脚本
+|   |   +--- makefile  
+|   |   +--- makefile             #进行编译连接生成可执行文件
+|   |   +---main.c                    #业务逻辑层代码
 +--- README.md
 ```
 
@@ -59,6 +59,12 @@
   - Src
 
   该目录下存放了串口层、AT命令解析层以及bc28 模块AT命令层，通过对函数的封装与抽象实现了这三层代码能在Linux和单片机侧运行，提高了代码的兼容性。
+
+  at-bc28.c:bc28联网所用的命令层。
+
+  at_cmd.c：解析AT命令层。
+
+  usart.c：串口收发层。
 
   - Inc
 
