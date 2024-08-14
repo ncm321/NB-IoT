@@ -1,3 +1,15 @@
+/*********************************************************************************
+ *      Copyright:  (C) 2024 niuchunmin 
+ *                  All rights reserved.
+ *
+ *       Filename:  leds.c
+ *    Description:  This file 
+ *                 
+ *        Version:  1.0.0(06/07/24)
+ *         Author:  niuchunmin<2430815397@qq.com>
+ *      ChangeLog:  1, Release initial version on "06/07/24 15:08:07"
+ *                 
+ ********************************************************************************/
 #include "leds.h"
 
 static leds_t            s_leds =
