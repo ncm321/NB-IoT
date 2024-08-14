@@ -2,7 +2,7 @@
  * at_cmd.c
  *
  *  Created on: 2024年7月14日
- *      Author: 杨璐
+ *      Author: 牛春敏
  */
 #include "at_cmd.h"
 #define CONFIG_OS_STM32
