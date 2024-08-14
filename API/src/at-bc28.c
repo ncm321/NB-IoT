@@ -2,7 +2,7 @@
  * NB-IoT_test.c
  *
  *  Created on: Jul 2, 2024
- *      Author: 杨璐
+ *      Author: 牛春敏
  */
 #include "at-bc28.h"
 
