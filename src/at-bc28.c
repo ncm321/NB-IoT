@@ -1,9 +1,15 @@
-/*
- * NB-IoT_test.c
+/*********************************************************************************
+ *      Copyright:  (C) 2024 niuchunmin
+ *                  All rights reserved.
  *
- *  Created on: Jul 2, 2024
- *      Author: niuchunmin
- */
+ *       Filename:  at-bc28.c
+ *    Description:  This file 
+ *                 
+ *        Version:  1.0.0(16/07/24)
+ *         Author:  Niu Chunmin <2430815397@qq.com>
+ *      ChangeLog:  1, Release initial version on "16/07/24 20:21:26"
+ *                 
+ ********************************************************************************/
 #include "at-bc28.h"
 
 nbiot_conf_t		nbconf;
