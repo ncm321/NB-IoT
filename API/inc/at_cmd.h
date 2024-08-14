@@ -2,7 +2,7 @@
  * at_cmd.h
  *
  *  Created on: 2024年7月14日
- *      Author: 杨璐
+ *      Author: 牛春敏
  */
 
 #ifndef INC_AT_CMD_H_
