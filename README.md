@@ -18,7 +18,13 @@
 
 NB-IoT 网络组成包括 NB-IoT 终端、NB-IoT 基站、NB-IoT 分组核心网、IoT 连接管理平台和行业应用服务器。
 
-![image-20240802130016702](images/image-20240802130016702.png)
+![image](https://github.com/user-attachments/assets/fce8126d-d1e1-44fb-b9c1-75b766c00781)
+终端：UE（User Equipment），通过空口连接到基站（eNodeB（evolved Node B , E-UTRAN 基站））。
+无线网侧：包括两种组网方式，一种是整体式无线接入网（Singel RAN），其中包括2G/3G/4G以及NB-IoT无线网，另一种是NB-IoT新建。主要承担空口接入处理，小区管理等相关功能，并通过S1-lite接口与IoT核心网进行连接，将非接入层数据转发给高层网元处理。
+核心网：EPC（Evolved Packet Core），承担与终端非接入层交互的功能，并将IoT业务相关数据转发到IoT平台进行处理。概括说明不全面，详细见下文。
+平台：目前以电信平台为主。
+应用服务器：以电信平台为例，应用server通过http/https协议和平台通讯，通过调用平台的开放API来控制设备，平台把设备上报的数据推送给应用服务器。平台支持对设备数据进行协议解析，转换成标准的json格式数据。
+
 5GNBIOT主要的应用场景及业务模型
 ![image](https://github.com/user-attachments/assets/e5274b1d-09d3-4995-b060-1265a606c1e4)
 
