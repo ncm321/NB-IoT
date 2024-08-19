@@ -19,6 +19,8 @@
 NB-IoT 网络组成包括 NB-IoT 终端、NB-IoT 基站、NB-IoT 分组核心网、IoT 连接管理平台和行业应用服务器。
 
 ![image-20240802130016702](images/image-20240802130016702.png)
+5GNBIOT主要的应用场景及业务模型
+![image](https://github.com/user-attachments/assets/e5274b1d-09d3-4995-b060-1265a606c1e4)
 
 ## 结构分支
 
