@@ -3,6 +3,8 @@
 # **开发目的**
 
 跨平台技术允许开发者编写一次代码并在多个操作系统或设备上运行。这种方式显著减少了需要编写和维护的代码量，从而降低了开发和维护成本。
+![image](https://github.com/user-attachments/assets/57e48b4b-71cc-4de4-a6e9-8d5aeb92c821)
+
 
 # 本Git介绍
 
